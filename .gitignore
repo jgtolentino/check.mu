@@ -53,3 +53,7 @@ docs/.vitepress/dist
 .vercel
 
 .react-router/types
+# Environment variables (LOCAL ONLY - DO NOT COMMIT)
+.env.local
+.env*.local
+*.env.local
