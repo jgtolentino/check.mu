@@ -1,10 +1,12 @@
 import type { Config } from "@react-router/dev/config";
+import { vercelPreset } from "@vercel/react-router/vite";
 import esbuild from "esbuild";
 import fs from "node:fs";
 import path from "node:path";
 
 export default {
   ssr: true,
+  presets: [vercelPreset()],
   buildEnd: async ({ reactRouterConfig }) => {
     const sentryInstrument = `instrument.server`;
     await esbuild
