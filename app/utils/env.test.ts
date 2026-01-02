@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { getEnv } from "./env";
+import { getEnv, getServerUrl } from "./env";
 import { ShelfError } from "./error";
 
 // why: Mock isBrowser to ensure we're testing server-side behavior
@@ -191,5 +191,67 @@ describe("getEnv", () => {
         getEnv("SESSION_SECRET");
       }).toThrow(ShelfError);
     });
+  });
+});
+
+describe("getServerUrl", () => {
+  beforeEach(() => {
+    // why: Clear all env stubs before each test to ensure clean state
+    vi.unstubAllEnvs();
+  });
+
+  afterEach(() => {
+    // why: Clean up env stubs after each test
+    vi.unstubAllEnvs();
+  });
+
+  it("should return SERVER_URL when explicitly set", () => {
+    vi.stubEnv("SERVER_URL", "https://my-app.example.com");
+    vi.stubEnv("VERCEL_URL", "my-app.vercel.app");
+
+    const result = getServerUrl();
+
+    expect(result).toBe("https://my-app.example.com");
+  });
+
+  it("should fallback to VERCEL_URL when SERVER_URL is not set", () => {
+    // why: Stub SERVER_URL as undefined to simulate missing variable
+    vi.stubEnv("SERVER_URL", undefined);
+    vi.stubEnv("VERCEL_URL", "checkmu.vercel.app");
+
+    const result = getServerUrl();
+
+    expect(result).toBe("https://checkmu.vercel.app");
+  });
+
+  it("should add https protocol to VERCEL_URL fallback", () => {
+    vi.stubEnv("SERVER_URL", undefined);
+    vi.stubEnv("VERCEL_URL", "my-preview-123.vercel.app");
+
+    const result = getServerUrl();
+
+    expect(result).toBe("https://my-preview-123.vercel.app");
+  });
+
+  it("should throw descriptive error when neither SERVER_URL nor VERCEL_URL is set", () => {
+    vi.stubEnv("SERVER_URL", undefined);
+    vi.stubEnv("VERCEL_URL", undefined);
+
+    expect(() => {
+      getServerUrl();
+    }).toThrow(ShelfError);
+    expect(() => {
+      getServerUrl();
+    }).toThrow("SERVER_URL is not set");
+  });
+
+  it("should prefer SERVER_URL over VERCEL_URL when both are set", () => {
+    // why: SERVER_URL should take precedence for custom domains
+    vi.stubEnv("SERVER_URL", "https://check.mu");
+    vi.stubEnv("VERCEL_URL", "checkmu.vercel.app");
+
+    const result = getServerUrl();
+
+    expect(result).toBe("https://check.mu");
   });
 });

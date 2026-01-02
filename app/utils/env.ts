@@ -31,6 +31,7 @@ declare global {
       SUPABASE_URL: string;
       SUPABASE_SERVICE_ROLE: string;
       SERVER_URL: string;
+      VERCEL_URL: string; // Auto-provided by Vercel deployments (without protocol)
       URL_SHORTENER: string;
       SUPABASE_ANON_PUBLIC: string;
       SESSION_SECRET: string;
@@ -125,7 +126,35 @@ export function initEnv() {
 /**
  * Server env
  */
-export const SERVER_URL = getEnv("SERVER_URL");
+
+/**
+ * Gets the server URL, with fallback to Vercel's automatic VERCEL_URL.
+ * Priority: SERVER_URL > VERCEL_URL > throws error
+ * @internal Exported for testing only
+ */
+export function getServerUrl(): string {
+  // First, try to get explicitly set SERVER_URL
+  const serverUrl = getEnv("SERVER_URL", { isRequired: false });
+  if (serverUrl) {
+    return serverUrl;
+  }
+
+  // Fallback to Vercel's automatic URL (provided without protocol)
+  const vercelUrl = getEnv("VERCEL_URL", { isRequired: false });
+  if (vercelUrl) {
+    return `https://${vercelUrl}`;
+  }
+
+  // Neither is set - throw descriptive error
+  throw new ShelfError({
+    message:
+      "SERVER_URL is not set. Set SERVER_URL environment variable, or deploy to Vercel where VERCEL_URL is provided automatically.",
+    cause: null,
+    label: "Environment",
+  });
+}
+
+export const SERVER_URL = getServerUrl();
 export const SUPABASE_SERVICE_ROLE = getEnv("SUPABASE_SERVICE_ROLE");
 export const INVITE_TOKEN_SECRET = getEnv("INVITE_TOKEN_SECRET", {
   isSecret: true,
